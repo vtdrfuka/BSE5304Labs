@@ -1,0 +1,15 @@
+Package: ScheduledCommitAction
+Title: Running R Scripts on a upload with GitHub Actions
+Version: 1.0.0
+Authors@R: 
+    person(given = "Daniel",
+           family = "Fuka",
+           role = c("aut", "cre"),
+           email = "drf28@cornell.edu")
+Description: Contains an example repository for running R scripts on an upload 
+    and commiting their results. Based on Simon Couch
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
