@@ -1,6 +1,4 @@
-on:
 name: R
-
 on:
   push:
     branches: [ "main" ]
