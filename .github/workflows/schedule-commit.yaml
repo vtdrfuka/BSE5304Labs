@@ -1,6 +1,11 @@
 on:
-  schedule:
-    - cron: "0 * * * *"
+name: R
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   generate-data:
