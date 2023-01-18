@@ -16,7 +16,9 @@ tmaxColor <- "#ff0000"
 priceColor <- rgb(0.2, 0.6, 0.9, 1)
 dir.create("pdfs")
 basestr=format(Sys.time(),"./pdfs/%Y%m%d%H%M")
+dev.list()
 pdf(paste0(basestr,"graph01.pdf"))  
+dev.list()
 print("Starting my plots")
 ggplot(data, aes(x=day)) +
   geom_line( aes(y=tmin), linewidth=2, color=tminColor) + 
@@ -35,6 +37,8 @@ ggplot(data, aes(x=day)) +
       axis.title.y.right = element_text(color = priceColor, size=13)
     ) +
     ggtitle("Temperature down, price up")
+dev.list()
 dev.off()
+dev.list()
 print("I finished!")
 q()
