@@ -35,8 +35,8 @@ p1= ggplot(data, aes(x=day)) +
     ) +
     ggtitle("Temperature down, price up")
 
-filename=paste0(basestr,"graph01.png")
-png(filename)  
+filename=paste0(basestr,"graph01.pdf")
+pdf(filename)  
 dev.off()
 print("file size")
 print(file.size(filename))
