@@ -8,7 +8,6 @@ data <- data.frame(
 )
 
 data$tmax = runif(100)*10  + data$tmin
-
 coeff <- 6
 # A few constants
 tminColor <- "#0000ff"
@@ -36,7 +35,8 @@ p1= ggplot(data, aes(x=day)) +
     ggtitle("Temperature down, price up")
 
 filename=paste0(basestr,"graph01.pdf")
-pdf(filename)  
+pdf(filename) 
+plot(p1)
 dev.off()
 print("file size")
 print(file.size(filename))
