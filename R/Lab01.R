@@ -18,7 +18,7 @@ dir.create("pdfs")
 basestr=format(Sys.time(),"./pdfs/%Y%m%d%H%M")
 dev.list()
 #pdf(paste0(basestr,"graph01.pdf"))  
-png(paste0(basestr,"graph01.pdf"))  
+png(paste0(basestr,"graph01.png"))  
 dev.list()
 print("Starting my plots")
 ggplot(data, aes(x=day)) +
