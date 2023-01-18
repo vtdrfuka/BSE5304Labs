@@ -15,12 +15,13 @@ tminColor <- "#0000ff"
 tmaxColor <- "#ff0000"
 priceColor <- rgb(0.2, 0.6, 0.9, 1)
 dir.create("pdfs")
-# hrbrthemes::import_roboto_condensed()
-pdf("pdfs/graph01.pdf")  
+basestr=format(Sys.time(),"./pdfs/%Y%m%d%H%M")
+pdf(paste0(basestr,"graph01.pdf"))  
+print("Starting my plots")
 ggplot(data, aes(x=day)) +
-  geom_line( aes(y=tmin), size=2, color=tminColor) + 
-  geom_line( aes(y=tmax), size=2, color=tmaxColor) + 
-  geom_line( aes(y=price / coeff), size=2, color=priceColor) +
+  geom_line( aes(y=tmin), linewidth=2, color=tminColor) + 
+  geom_line( aes(y=tmax), linewidth=2, color=tmaxColor) + 
+  geom_line( aes(y=price / coeff), linewidth=2, color=priceColor) +
     scale_y_continuous(
       # Features of the first axis
       name = "Temp(C)",
@@ -36,3 +37,4 @@ ggplot(data, aes(x=day)) +
     ggtitle("Temperature down, price up")
 dev.off()
 print("I finished!")
+q()
