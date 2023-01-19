@@ -3,3 +3,6 @@
 .github/
 LICENSE.md
 data-raw/
+^ScheduledCommitAction\.Rcheck$
+^ScheduledCommitAction.*\.tar\.gz$
+^ScheduledCommitAction.*\.tgz$

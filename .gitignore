@@ -5,3 +5,6 @@
 .github/depends.Rds
 .github/R-version
 *.DS_Store
+ScheduledCommitAction.Rcheck/
+ScheduledCommitAction*.tar.gz
+ScheduledCommitAction*.tgz
