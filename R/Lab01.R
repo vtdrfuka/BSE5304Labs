@@ -1,6 +1,6 @@
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(ggplot2,dplyr,patchwork)
-print("hello world version 2")
+pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
+print("hello world version 3")
 
 data <- data.frame(
   day = as.Date("2019-01-01") + 0:99,
