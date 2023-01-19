@@ -13,7 +13,7 @@ data <- data.frame(
   tmin = runif(100) + seq(1,100)^2.5 / 10000,
   price = runif(100) + seq(100,1)^1.5 / 10
 )
-
+#new change
 data$tmax = runif(100)*10  + data$tmin
 coeff <- 6
 # A few constants
