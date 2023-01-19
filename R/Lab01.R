@@ -4,7 +4,8 @@ print("hello world version 3")
 system("git config --global user.email 'drf28@cornell.edu' ") 
 system("git config --global user.name 'Daniel Fuka' ")
 # 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
-
+# I am very proud of myself for making a model that can 
+# actually be used by others.
 data <- data.frame(
   day = as.Date("2019-01-01") + 0:99,
   tmin = runif(100) + seq(1,100)^2.5 / 10000,
