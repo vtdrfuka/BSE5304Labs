@@ -5,6 +5,7 @@ system("git config --global user.email 'drf28@cornell.edu' ")
 system("git config --global user.name 'Daniel Fuka' ")
 # testagain
 # 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
+# ghp_2GNldhJNIQQAZxUa5f7fW
 # I am very proud of myself for making a model that can 
 # actually be used by others.
 data <- data.frame(
