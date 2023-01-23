@@ -4,7 +4,7 @@ print("hello world version 3")
 system("git config --global user.email 'drf28@cornell.edu' ") 
 system("git config --global user.name 'Daniel Fuka' ")
 # testagain
-# 
+
 # I am very proud of myself for making a model that can 
 # actually be used by others.
 data <- data.frame(
