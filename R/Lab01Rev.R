@@ -5,10 +5,11 @@ system("git config --global user.name 'Daniel Fuka' ")
 
 # Get some knowledge of your work environment
 Sys.getenv()
+Sys.getenv("HOME")
 Sys.getenv("WORKON_HOME")
-mygitbase=Sys.getenv("WORKON_HOME")
+mygitbasedir=Sys.getenv("WORKON_HOME")
+myhomedir=Sys.getenv("HOME")
 # We will explore this deeper when we get onto the VT ARC Next Week
-
 # Note you should never store your authentication keys like this but... 
 
 
