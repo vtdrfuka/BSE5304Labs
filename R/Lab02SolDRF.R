@@ -1,29 +1,42 @@
-Sys.getenv()
-Sys.getenv("HOME")
-myhomedir=Sys.getenv("HOME")
-# Next depends on where you set up your git, and what you called it locally, 
-# but when you start a new git project, it will be the first directory you 
-# are placed in
-getwd()
 # 
-# WOOO HOOO... took me a few hours to figure this one out!
-# 
-mygitdir=rstudioapi::getActiveProject()
-mypdfdir=paste0(mygitdir,"/pdfs")
-
+# Since everything depends on the libraries you install
+# it is worthwhile loading them at the beginning
+#
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
 pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
-    rnoaa,raster,shapefiles,rgdal,elevatr,terra,progress,lubridate)
-system("git config --global user.email 'drfuka@vt.edu' ") 
-system("git config --global user.name 'Daniel Fuka' ")
-
-datadir=paste0(myhomedir,"/data")
+               rnoaa,raster,shapefiles,rgdal,elevatr,terra,progress,lubridate)
+LabNo="/Lab03"
+#
+# Getting our organization on for where we want to put
+# Data, external programs, and our project files.
+# Things are going to get messy if we don't start issolating
+# our data files by Lab
+#
+myhomedir=Sys.getenv("HOME")
+datadir=paste0(myhomedir,"/data",LabNo)
 dir.create(datadir,recursive = T)
 srcdir=paste0(myhomedir,"/src")
 dir.create(srcdir,recursive = T)
 
-
+# Setting the directory for where the GitHub project exists. 
+# This depends on where you set up your git, and what you called it locally, 
+# but when you start a new git project, it will be the first directory you 
+# are placed in... or if later in the project:
+# WOOO HOOO... took me a few hours to find this function!
+# 
+mygitdir=rstudioapi::getActiveProject()
+mypdfdir=paste0(mygitdir,"/pdfs",LabNo)
+dir.create(mypdfdir)
+# 
+setwd(mygitdir)
+system("git config --global user.email 'drfuka@vt.edu' ") 
+system("git config --global user.name 'Daniel Fuka' ")
+system("git config pull.rebase false")
+#
+# This was already done before, and doesn't need to be repeated unless there
+# is an update to R or the EcoHydRology Package... but 
+#
 setwd(srcdir)
 system("svn checkout svn://scm.r-forge.r-project.org/svnroot/ecohydrology/"); 
 install.packages(c("ecohydrology/pkg/EcoHydRology/"),repos = NULL)
@@ -38,56 +51,20 @@ myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2015-01-01",
 # For most watershed modelling purposes we normalize Q in mm/day for basins
 myflowgage$flowdata$Qmm = myflowgage$flowdata$flow/myflowgage$area/10^3
 
-# In the Lab01, we introduced you to a way to quickly get your WX Data 
+# In the Lab02, we introduced you to a way to quickly get your WX Data 
 # for any location in the world way easier than traditional download and
 # parsing methods most old people use.
 #
-# Sorry, but there is even an easier way!
-?FillMissWX()
 WXData=FillMissWX(declat=myflowgage$declat, declon=myflowgage$declon,
                     StnRadius=30,minstns=10,date_min="2010-01-01",
                     date_max="2023-02-01",targElev=1,
                     method = "IDEW",alfa=2)
 
 BasinData=merge(WXData,myflowgage$flowdata,by.x="date",by.y="mdate")
-# A few constants
-MinTempCol <- "#0000ff"
-  MaxTempCol <- "#ff0000"
-  PCol <- "#000000"
-  QCol <- PCol
 
-coeff=1
-p1= ggplot(BasinData, aes(x=date)) +
-  geom_line( aes(y=MaxTemp), linewidth=1, color=MaxTempCol) + 
-  geom_line( aes(y=MinTemp), linewidth=1, color=MinTempCol) + 
-  geom_line( aes(y=Qmm), linewidth=1, color=QCol) +
-  scale_y_continuous(
-    # Features of the first axis
-    name = "Temp(C)",
-    
-    # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Depth(mm)")
-  ) + 
-  theme(
-    axis.title.y = element_text(color = "black", size=13),
-    axis.title.y.right = element_text(color = QCol, size=13)
-  ) +
-  ggtitle(myflowgage$gagename)
-
-p1
-
-basestr=format(Sys.time(),"/%Y%m%d%H%M")
-filename=paste0(mypdfdir,basestr,"graph01.pdf")
-pdf(filename) 
-plot(p1)
-dev.off()
-print("file size")
-print(file.size(filename))
-print("I finished!")
 
 trunc((180+myflowgage$declon)/6+1)
 proj4_utm = paste0("+proj=utm +zone=", trunc((180+myflowgage$declon)/6+1), " +datum=WGS84 +units=m +no_defs")
-print(proj4_utm)
 
 # Lat/Lon (_ll) is much easier!
 proj4_ll = "+proj=longlat"
@@ -96,11 +73,8 @@ proj4_ll = "+proj=longlat"
 # Reference Systems” or CRS in future geographic manipulations. 
 crs_ll=CRS(proj4_ll)
 crs_utm=CRS(proj4_utm)
-print(crs_ll)
-print(crs_utm)
 #
 # Double chec
-myflowgage$area
 
 latlon <- cbind(myflowgage$declon,myflowgage$declat)
 myflowgage$gagepoint_ll <- SpatialPoints(latlon)
@@ -111,10 +85,8 @@ url=paste0("https://www.google.com/maps/@",
              myflowgage$declat,",",myflowgage$declon,",18z")
 browseURL(url)
 # We are going to over estimate our area
-sqrt(myflowgage$area)   # guestimating square watershed
 # For our search we are going to multiply the area by 6 and
 # to get the distance
-sqrt(myflowgage$area*8)
 searchlength=sqrt(myflowgage$area*8)*1000 
 pourpoint=SpatialPoints(myflowgage$gagepoint_utm@coords,proj4string = crs_utm)
 bboxpts=myflowgage$gagepoint_utm@coords
@@ -149,7 +121,10 @@ zoomext2=rbind(zoomext2,zoomext2+res(mydem)*10)
 zoomext2=rbind(zoomext2,zoomext2-res(mydem)*10)
 zoomext2=SpatialPoints(zoomext2,proj4string = crs_utm)  
 zoom(mydem,ext=zoomext2)
+plot(pourpoint,add=T,col="red")
 
+# If you already installed this in your ~/src directory and it 
+# worked... you really 
 # cd ~/src/      # Set your directory to your home directory
 # git clone https://github.com/dtarb/TauDEM.git
 # mkdir ~/src/TauDEM/bin
@@ -159,6 +134,7 @@ zoom(mydem,ext=zoomext2)
 # sed -i -e 's/MPI_Type_extent(MPI_LONG, \&extent)/MPI_Aint lb\;MPI_Type_get_extent(MPI_LONG, \&lb, \&extent)/g' linklib.h
 ## Now let's try make again!
 # make
+
 rm("old_path")
 old_path <- Sys.getenv("PATH")
 old_path
@@ -262,5 +238,11 @@ system("mpiexec -n 2 Streamnet -fel mydemfel.tif -p mydemp.tif -ad8 mydemad8.tif
 plot(raster("mydemord.tif"))
 zoom(raster("mydemord.tif"))
 plot(raster("mydemw.tif"))
+
+
+filename=paste0(mypdfdir,basestr,"image.pdf")
+pdf(filename) 
+plot(p1)
+dev.off()
 
 
