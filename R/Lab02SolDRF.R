@@ -47,7 +47,12 @@ setwd(datadir)
 myflowgage_id="0205551460"
 myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2015-01-01",
                            end_date = "2019-01-01")
-
+#
+# This is where some folks had issues... they forgot to check their 
+# watershed areas per the homework... though there were ways to fix
+# it later with lower resolution DEM pull
+#
+print(myflowgage$area)
 # For most watershed modelling purposes we normalize Q in mm/day for basins
 myflowgage$flowdata$Qmm = myflowgage$flowdata$flow/myflowgage$area/10^3
 
@@ -61,9 +66,9 @@ WXData=FillMissWX(declat=myflowgage$declat, declon=myflowgage$declon,
                     method = "IDEW",alfa=2)
 
 BasinData=merge(WXData,myflowgage$flowdata,by.x="date",by.y="mdate")
-
-
-trunc((180+myflowgage$declon)/6+1)
+#
+# Setting the projection information for the specific location
+#
 proj4_utm = paste0("+proj=utm +zone=", trunc((180+myflowgage$declon)/6+1), " +datum=WGS84 +units=m +no_defs")
 
 # Lat/Lon (_ll) is much easier!
@@ -112,6 +117,11 @@ writeRaster(mydem,filename = "mydem.tif",overwrite=T)
 # ls; cd ~; pwd;  # Linux/Mac 
 # dir; cd ; # Windows
 
+#
+# I am going to set two different zoom levels so I can inspect 
+# the TauDEM Processing below.
+#
+
 zoomext=myflowgage$gagepoint_utm@coords
 zoomext=rbind(zoomext,zoomext+res(mydem)*100)
 zoomext=rbind(zoomext,zoomext-res(mydem)*100)
@@ -147,9 +157,7 @@ if( ! grepl("~/src/TauDEM/bin",old_path)){
 
 system("mpirun aread8")
 
-
 setwd(datadir)
-
 z=raster("mydem.tif")
 plot(z)
 
@@ -186,12 +194,11 @@ plot(ang)
 slp=raster("mydemslp.tif")
 plot(slp)
 
-
 # Dinf contributing area
 system("mpiexec -n 2 areadinf -ang mydemang.tif -sca mydemsca.tif")
 sca=raster("mydemsca.tif")
 plot(log(sca))
-zoom(log(sca))
+zoom(log(sca),ext=zoomext2)
 
 # Threshold
 system("mpiexec -n 2 threshold -ssa mydemad8.tif -src mydemsrc.tif -thresh 100")
@@ -213,17 +220,10 @@ plot(approxpt,add=T, col="blue")
 outpt=readOGR("outlet.shp")
 plot(outpt,add=T, col="red")
 
-outpt=read.shp("outlet.shp")
-approxpt=read.shp("ApproxOutlets.shp")
-
-plot(src)
-points(outpt$shp[2],outpt$shp[3],pch=19,col=2)
-points(approxpt$shp[2],approxpt$shp[3],pch=19,col=4)
-
-zoom(src)
-
 # Contributing area upstream of outlet
-system("mpiexec -n 2 Aread8 -p mydemp.tif -o Outlet.shp -ad8 mydemssa.tif")
+# Now that we know the location of an outlet, we can isolate our basin 
+#
+system("mpiexec -n 2 aread8 -p mydemp.tif -o outlet.shp -ad8 mydemssa.tif")
 ssa=raster("mydemssa.tif")
 plot(ssa) 
 
@@ -231,18 +231,12 @@ plot(ssa)
 system("mpiexec -n 2 threshold -ssa mydemssa.tif -src mydemsrc1.tif -thresh 2000")
 src1=raster("mydemsrc1.tif")
 plot(src1)
-zoom(src1)
+zoom(src1,ext=zoomext2)
 
 # Stream Reach and Watershed
-system("mpiexec -n 2 Streamnet -fel mydemfel.tif -p mydemp.tif -ad8 mydemad8.tif -src mydemsrc1.tif -o outlet.shp -ord mydemord.tif -tree mydemtree.txt -coord mydemcoord.txt -net mydemnet.shp -w mydemw.tif")
+system("mpiexec -n 2 streamnet -fel mydemfel.tif -p mydemp.tif -ad8 mydemad8.tif -src mydemsrc1.tif -o outlet.shp -ord mydemord.tif -tree mydemtree.txt -coord mydemcoord.txt -net mydemnet.shp -w mydemw.tif")
 plot(raster("mydemord.tif"))
-zoom(raster("mydemord.tif"))
+zoom(raster("mydemord.tif"),ext=zoomext2)
 plot(raster("mydemw.tif"))
-
-
-filename=paste0(mypdfdir,basestr,"image.pdf")
-pdf(filename) 
-plot(p1)
-dev.off()
 
 
