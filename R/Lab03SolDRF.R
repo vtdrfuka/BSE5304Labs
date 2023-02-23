@@ -2,11 +2,15 @@
 # Since everything depends on the libraries you install
 # it is worthwhile loading them at the beginning
 #
+objects()  # This will list the objects you have.
+rm(list=objects()) # Removes ALL the objects… so be careful here.
+
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
 pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
                rnoaa,raster,shapefiles,rgdal,elevatr,terra,progress,lubridate)
-LabNo="/Lab04"
+
+LabNo="/Lab04a"
 #
 # Getting our organization on for where we want to put
 # Data, external programs, and our project files.
@@ -49,7 +53,6 @@ setwd(datadir)
 # Should we do a gage that is easy, or deal with some reality?
 #
 myflowgage_id="0205551460"  # Old Friendly Gage
-myflowgage_id="14216500"    # Most Frustrating Gage... lets do it!
 myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2015-01-01",
                          end_date = "2022-03-01")
 

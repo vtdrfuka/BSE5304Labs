@@ -368,6 +368,7 @@ plot(TIC_terra)
 # Lab 04 Calibration
 # Building more complex functions
 # 
+# DRF Try this 0115150
 
 TMWB=BasinData
 #
@@ -375,78 +376,14 @@ TMWB=BasinData
 # 1) Calculate PET for the basin via Function
 # 2) Calculate the Snow Accumulation and Melt via Function
 # 3) Run TMWB via Function 
-#
-#
-# First functions from last week we already have, Wetting, Drying, 
-# and Wetting above capacity 
-# 
-# soil wetting function
-soilwetting<-function(AWprev,dP_func,AWC_func){
-  AW_func<-AWprev+dP_func
-  excess_func<-0.0
-  c(AW_func,excess_func)
-} 
-# soil drying function
-soildrying<-function(AWprev,dP_func,AWC_func){
-  AW_func=AWprev*exp(dP_func/AWC_func)
-  excess_func<-0.0
-  c(AW_func,excess_func)
-}
-# soil_wetting_above_capacity function
-soil_wetting_above_capacity<-function(AWprev,dP_func,AWC_func){
-  AW_func<-AWC_func
-  excess_func<-AWprev+dP_func-AWC_func
-  c(AW_func,excess_func)
-}
 
+source("https://raw.githubusercontent.com/vtdrfuka/BSE5304Labs/main/R/TMWBFuncs.R")
+source("https://raw.githubusercontent.com/vtdrfuka/BSE5304Labs/main/R/TISnow.R")
 #
 # Lets make one out of our Temperature Index Snow Model
 #
 
-SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
-bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
-bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
-Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
-Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
-
-TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
-  WBData$AvgTemp=(WBData$MaxTemp-WBData$MinTemp)/2
-  WBData$bmlt = (bmlt6 + bmlt12)/2 + (bmlt6 - bmlt12)/2 * 
-    sin(2*pi/365*(julian(WBData$date,origin = as.Date("2000-01-01"))-81))
-  # Initialize SNO, Tsno as well as the first values of each
-  WBData$SNO = 0  # Snow Depth (mm)
-  WBData$Tsno = 0  # Snow Temp (C)
-  WBData$SNOmlt = 0  # Snow Melt (mm)
-  WBData$SNOfall = 0  # Snow Fall (mm)
-  attach(WBData)
-  for (t in 2:length(date)){
-    Tsno[t]= Tsno[t-1] * (1.0-Tlag) +  AvgTemp[t] * Tlag
-    if(AvgTemp[t] < SFTmp){
-      SNO[t]= SNO[t-1] + P[t]
-      #
-      # Eeee... I forgot to save my snowfall!
-      #
-      SNOfall=P[t]
-    }  else {
-      SNOmlt[t]= bmlt[t] * SNO[t-1] * ((Tsno[t]+MaxTemp[t])/2 - Tmlt) 
-      SNOmlt[t]= min(SNOmlt[t],SNO[t-1])
-      SNO[t]= SNO[t-1] -SNOmlt[t]
-    }
-    print(t)
-  }
-  plot(date,SNO,type="l")
-  detach(WBData)
-  WBData$Tsno=Tsno
-  WBData$SNO=SNO
-  WBData$SNOmlt=SNOmlt
-  WBData$SNOmlt=SNOfall
-  rm(list=c("SNO", "SNOmlt", "Tsno"))
-  return(data.frame(Tsno=WBData$Tsno,SNO=WBData$SNO,SNOmlt=WBData$SNOmlt,SNOfall=WBData$SNOfall))
-}
-
-
-
-SNO_df=TISnow(TMWB)
+SNO_df=TISnow(TMWB,SFTmp = 2,bmlt6 = 3,bmlt12 = 0,Tmlt = 3,Tlag = 1)
 TMWB$SNO=SNO_df$SNO
 TMWB$SNOmlt=SNO_df$SNOmlt
 TMWB$SNOfall=SNO_df$SNOfall
@@ -455,149 +392,79 @@ detach(TMWB)
 #
 # Our PET Model we will borrow from EcoHydrology
 #
-?PET_fromTemp
-TMWB$PET=PET_fromTemp(Jday=(1+as.POSIXlt(date)$yday),Tmax_C = MaxTemp,Tmin_C = MinTemp,
+detach(TMWB)
+#attach(TMWB)
+
+TMWB$PET=PET_fromTemp(Jday=(1+as.POSIXlt(TMWB$date)$yday),
+                      Tmax_C = TMWB$MaxTemp,Tmin_C = TMWB$MinTemp,
                       lat_radians = myflowgage$declat*pi/180) * 1000
-plot(date,TMWB$PET)
+plot(TMWB$date,TMWB$PET)
 
+junkout=TMWBmodel(TMWB)
+TMWBnew=TMWBmodel(TMWB)
 
-# Our TMWB Model
-
-attach(TMWB)
-detach(TMWB)
-
-
-TMWB$ET = TMWB$PET # in mm/day
-TMWB$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
-TMWB$dP = TMWB$P-TMWB$ET -TMWB$SNO + TMWB$SNOmlt 
-
-attach(TMWB)# Remember to detach or it gets ugly
-plot(date,Qmm,type = "l",col="black")
-lines(date,P,type = "l",col="red")
-lines(date,Qmm,type = "l",col="black") # We repeat to have Qmm on top of P
-lines(date,ET,type = "l",col="blue")
-legend("topright", c("P", "Qmm", "ET"), col = c("red", "black", "blue"),
-       lty = 1:2, cex = 0.8)
-detach(TMWB) # IMPORTANT TO DETACH
-
-
-TMWB$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
-
-
-TMWB$AW=NA  #Assigns all values in column with “NA” (Not available)
-TMWB$AW[1]=250
-TMWB$Excess=NA
-TMWB$Excess[1]=0
-head(TMWB)
-
-# Here we go looping through our functions….
-
-attach(TMWB)
-for (t in 2:length(date)){
-  if (dP[t]< 0) {  
-    values<-soildrying(AW[t-1],dP[t],AWC[t])
-  } else if (AW[t-1]+dP[t]>AWC[t]) {
-    values<-soil_wetting_above_capacity(AW[t-1],dP[t],AWC[t])
-  } else {
-    values<-soilwetting (AW[t-1],dP[t],AWC[t])
-  }
-  AW[t]<-values[1]
-  Excess[t]<-values[2]
-}
-
-detach(TMWB)
-TMWB$AW <-AW
-TMWB$Excess<-Excess
-rm(list=c("AW","Excess"))
-
-# Calculate Watershed Storage and River Discharge: 
-TMWB$Qpred=NA
-TMWB$Qpred[1]=0
-TMWB$S=NA
-TMWB$S[1]=0
-
-attach(TMWB)
-fcres=.3   # reservoir coefficient
-for (t in 2:length(date)){
-  S[t]=S[t-1]+Excess[t]     
-  Qpred[t]=fcres*S[t]
-  S[t]=S[t]-Qpred[t]
-}
-detach(TMWB) # IMPORTANT TO DETACH
-TMWB$S=S
-TMWB$Qpred=Qpred # UPDATE vector BEFORE DETACHING
-rm(list=c("S","Qpred"))
-View(TMWB)
-dev.off()
-plot(TMWB$date,TMWB$Qmm,col="black",ylab ="Qmm(mm)",xlab="date",type="l")
-lines(TMWB$date,TMWB$Qpred,col="blue",type="l", 
-      xlab = "", ylab = "")
-legend("topright", c("Qmm(mm)", "Qpred(mm)"), col = c("black", "blue"),
-       lty = 1:2, cex = 0.8)
-
-myflowgage$FldCap=.45
-myflowgage$WiltPt=.15
-myflowgage$Z=1000
-TMWB$AWC=(myflowgage$FldCap-myflowgage$WiltPt)*myflowgage$Z # 
-TMWB$dP = 0 # Initializing Net Precipitation
-TMWB$ET = 0 # Initializing ET
-TMWB$AW = 0 # Initializing AW
-TMWB$Excess = 0 # Initializing Excess
-
-
-# Loop to calculate AW and Excess
-attach(TMWB)
-for (t in 2:length(AW)){
-  # This is where Net Precipitation is now calculated
-  # Do you remember what Net Precip is? Refer to week 2 notes
-  # Update this to reflect the ET model described above
-  
-  ET[t] = (AW[t-1]/AWC[t-1])*PET[t] # New Model
-  dP[t] = P[t] - ET[t] + SNOmlt[t] - SNOfall[t] 
-  # From here onward, everything is the same as Week2’s lab
-  if (dP[t]<=0) {
-    values<-soildrying(AW[t-1],dP[t],AWC[t])
-  } else if((dP[t]>0) & (AW[t-1]+dP[t])<=AWC[t]) {
-    values<-soilwetting(AW[t-1],dP[t],AWC[t])
-  } else {
-    values<-soil_wetting_above_capacity(AW[t-1],dP[t],AWC[t])
-  }
-  AW[t]<-values[1]
-  Excess[t]<-values[2]
-  print(t)
-}
-TMWB$AW=AW
-TMWB$Excess=Excess
-TMWB$dP=dP
-TMWB$ET=ET
-rm(list=c("AW","dP","ET", "Excess"))
-detach(TMWB) # IMPORTANT TO DETACH
-
-# Calculate Watershed Storage and River Discharge, S and Qpred, playing with the reservoir coefficient to try to get Qpred to best match Qmm
-
-TMWB$Qpred=NA
-TMWB$Qpred[1]=0
-TMWB$S=NA
-TMWB$S[1]=0
-attach(TMWB)
-fcres=.3
-for (t in 2:length(date)){
-  S[t]=S[t-1]+Excess[t]     
-  Qpred[t]=fcres*S[t]
-  S[t]=S[t]-Qpred[t]
-}
-TMWB$S=S
-TMWB$Qpred=Qpred # UPDATE vector BEFORE DETACHING
-detach(TMWB) # IMPORTANT TO DETACH
-rm(list=c("Qpred","S"))
-
-#Make a plot that has Qmm, P,and Qpred over time
-plot(TMWB$date,P,col="black")
-lines(date,Qmm,type = "l",col="black")
-lines(date,Qpred,col="blue")
-
+NSE(TMWB$Qmm,TMWB$Qpred)
 #
 # Functionalizing big big big time
 # Here is a great place to make this into a function!
 # return(TMWB)
 
+
+BasinTMWB_JO=TMWBnew[(month(TMWBnew$date) > 5 
+                      & month(TMWBnew$date) < 11),]
+attach(BasinTMWB_JO)
+plot(dP,Qmm)
+detach(BasinTMWB_JO)
+
+(1000/85-10)*25.4   # our CN estimate in bold
+#[1] 44.82353
+(1000/50-10)*25.4   # our CN estimate in bold
+#[1] 254
+#
+# So we are going to visually "guestimate" that S should be somewhere between 
+# 45mm and 260mm… repeat plotting until your solution covers the 
+# largest Qmm vs dP event (upper right hand corner of plot). 
+# 
+
+# Assuming that (P-Ia) ~ dP, we can visually compare 
+attach(BasinTMWB_JO)
+plot(dP,Qmm)
+points(dP,dP^2/(dP+45),col="red")  # S guestimates in bold
+points(dP,dP^2/(dP+260),col="blue")# S guestimates in bold
+
+# Now perform a “Calibration” using our method from Lab3 and the NSE
+# as the “Objective Function”.  
+#
+# Vary S to maximize NSE using Eq. 4 of Lyon 2004 as our predictor of Q
+#   Qpred=dP^2/(dP+S)
+#
+NSE(Qmm,dP^2/(dP+260))
+NSE(Qmm,dP^2/(dP+45))
+#
+# Keep iterating until NSE is as high as you can get for your 
+# best estimate to S (Sest)
+#
+f <- function (x) {
+  Sest=x
+  return(NSE(Qmm,dP^2/(dP+Sest)))
+}
+optimize(f, c(50,500), tol = 0.0001,maximum = TRUE)$maximum
+Sest="WHAT?"
+plot(dP,Qmm)
+points(dP,dP^2/(dP+Sest),col="red") 
+########
+detach(BasinTMWB_JO)
+(1000/85-10)*25.4   # our CN estimate in bold
+                                                                                                    #[1] 44.82353
+                                                                                                #[1] 254
+                                                                                                    #
+                                                                                                    # So we are going to visually "guestimate" that S should be somewhere between 
+                                                                                                    # 45mm and 260mm… repeat plotting until your solution covers the 
+                                                                                                    # largest Qmm vs dP event (upper right hand corner of plot). 
+                                                                                                    # 
+                                                                                                    
+                                                                                                    # Assuming that (P-Ia) ~ dP, we can visually compare 
+                                                                                                    attach(BasinTMWB_JO)
+                                                                                                    plot(dP,Qmm)
+                                                                                                    points(dP,dP^2/(dP+45),col="red")  # S guestimates in bold
+                                                                                                    points(dP,dP^2/(dP+260),col="blue")# S guestimates in bold
