@@ -19,15 +19,26 @@ soil_wetting_above_capacity<-function(AWprev,dP_func,AWC_func){
   excess_func<-AWprev+dP_func-AWC_func
   c(AW_func,excess_func)
 }
+#
+#
+#
+
 TMWBmodel=function(TMWBdf,fcres=.3,FldCap=.45,WiltPt=.15,Z=1000){
   # Our TMWB Model
+  SNO_df=TISnow(TMWBdf,)
+  TMWBdf$SNO=SNO_df$SNO
+  TMWBdf$SNOmlt=SNO_df$SNOmlt
+  TMWBdf$SNOfall=SNO_df$SNOfall
+  TMWBdf$Tsno=SNO_df$Tsno
+  
+  TMWBdf$PET=PET_fromTemp(Jday=(1+as.POSIXlt(date)$yday),Tmax_C = MaxTemp,Tmin_C = MinTemp,
+                        lat_radians = myflowgage$declat*pi/180) * 1000
+  
   TMWBdf$ET = TMWBdf$PET # in mm/day
   TMWBdf$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
   TMWBdf$dP = TMWBdf$P-TMWBdf$ET -TMWBdf$SNO + TMWBdf$SNOmlt 
   
   TMWBdf$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
-  
-  
   TMWBdf$AW=NA  #Assigns all values in column with “NA” (Not available)
   TMWBdf$AW[1]=250
   TMWBdf$Excess=NA
@@ -75,8 +86,7 @@ TMWBmodel=function(TMWBdf,fcres=.3,FldCap=.45,WiltPt=.15,Z=1000){
   TMWBdf$ET = 0 # Initializing ET
   TMWBdf$AW = 0 # Initializing AW
   TMWBdf$Excess = 0 # Initializing Excess
-  
-  
+
   # Loop to calculate AW and Excess
   attach(TMWBdf)
   for (t in 2:length(AW)){
@@ -105,8 +115,8 @@ TMWBmodel=function(TMWBdf,fcres=.3,FldCap=.45,WiltPt=.15,Z=1000){
   rm(list=c("AW","dP","ET", "Excess"))
   detach(TMWBdf) # IMPORTANT TO DETACH
   
-  # Calculate Watershed Storage and River Discharge, S and Qpred, playing with the reservoir coefficient to try to get Qpred to best match Qmm
-  
+  # Calculate Watershed Storage and River Discharge, S and Qpred, 
+  # playing with the reservoir coefficient to try to get Qpred to best match Qmm
   TMWBdf$Qpred=NA
   TMWBdf$Qpred[1]=0
   TMWBdf$S=NA
