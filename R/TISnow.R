@@ -34,7 +34,6 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
       SNOmlt[t]= min(SNOmlt[t],SNO[t-1])
       SNO[t]= SNO[t-1] -SNOmlt[t]
     }
-    print(t)
   }
   plot(date,SNO,type="l")
   detach(WBData)

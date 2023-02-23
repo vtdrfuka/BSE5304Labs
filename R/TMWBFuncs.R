@@ -23,16 +23,18 @@ soil_wetting_above_capacity<-function(AWprev,dP_func,AWC_func){
 #
 #
 
-TMWBmodel=function(TMWBdf,fcres=.3,FldCap=.45,WiltPt=.15,Z=1000){
+TMWBmodel=function(TMWBdf,fcres=.3,FldCap=.45,WiltPt=.15,Z=1000,
+                   SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
   # Our TMWB Model
-  SNO_df=TISnow(TMWBdf,)
+  SNO_df=TISnow(TMWBdf,SFTmp=SFTmp,bmlt6=bmlt6,bmlt12=bmlt12,Tmlt=Tmlt,Tlag=Tlag)
   TMWBdf$SNO=SNO_df$SNO
   TMWBdf$SNOmlt=SNO_df$SNOmlt
   TMWBdf$SNOfall=SNO_df$SNOfall
   TMWBdf$Tsno=SNO_df$Tsno
-  
+  attach(TMWBdf)
   TMWBdf$PET=PET_fromTemp(Jday=(1+as.POSIXlt(date)$yday),Tmax_C = MaxTemp,Tmin_C = MinTemp,
                         lat_radians = myflowgage$declat*pi/180) * 1000
+  detach(TMWBdf)
   
   TMWBdf$ET = TMWBdf$PET # in mm/day
   TMWBdf$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
@@ -106,7 +108,6 @@ TMWBmodel=function(TMWBdf,fcres=.3,FldCap=.45,WiltPt=.15,Z=1000){
     }
     AW[t]<-values[1]
     Excess[t]<-values[2]
-    print(t)
   }
   TMWBdf$AW=AW
   TMWBdf$Excess=Excess
